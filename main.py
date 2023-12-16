@@ -12,6 +12,7 @@ from sklearn.svm import SVC
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.tree import DecisionTreeClassifier
 from imblearn.over_sampling import RandomOverSampler
+import re
 
 nltk.download('stopwords')
 nltk.download('wordnet')
@@ -143,3 +144,34 @@ svm_linear.fit(X_train_vectorized, y_train)
 # Avaliação do modelo
 svm_linear_accuracy = svm_linear.score(X_test_vectorized, y_test)
 print("Accuracy with Linear SVM:", svm_linear_accuracy)
+
+
+# Função para pré-processamento de uma única notícia
+def preprocess_single_news(news):
+    news = re.sub(r'\b\d+\b', '', news)  # Remove números
+    processed_news = preprocess_text(news)
+    return processed_news
+
+
+# Função para prever se uma notícia é fake ou não
+def predict_fake_news(model, vectorizer, news):
+    # Pré-processamento da notícia
+    processed_news = preprocess_single_news(news)
+
+    # Vetorização usando o mesmo vetorizador usado no treinamento
+    news_vectorized = vectorizer.transform([processed_news])
+
+    # Previsão usando o modelo treinado
+    prediction = model.predict(news_vectorized)
+
+    return prediction[0]
+
+
+# Exemplo de uso da função para prever se uma notícia é fake ou não
+sample_news = "Um policial penal de 44 anos reagiu a uma tentativa de assalto na tarde desta quinta-feira, 14, na rua Raio do Sol, no bairro Sapopemba, na Zona Leste de São Paulo. O agente chegava de moto em casa quando foi abordado por dois homens, que também estavam de moto. Ao perceber a presença dos assaltantes, ele atirou – um jovem de 20 anos morreu, enquanto o outro, um adolescente, foi detido após ser baleado. Após controlar a situação, o policial gravou um vídeo relatando o ocorrido. “Minha moto está parada na porta de casa. Quando eu estava chegando, vi que eles estavam me seguindo. Aí desci, parei na porte e na hora que eu desci da moto, me armei. Eles começaram a gritar ‘perdeu’ na minha direção. Eu já esperava que eles iam me abordar. Aí atirei e fiz o revide. Eles tentaram fugir, mas o piloto está caído. O outro está dizendo que foi baleado e dominado. Já liguei no 190 e estou esperando o apoio”, disse. Em contato com a reportagem do site da Jovem Pan, a SSP (Secretaria de Segurança Pública) informou que o caso foi registrado como tentativa de roubo de veículo e morte decorrente à intervenção policial no 69° DP (Teotônio Vilela), que solicitou assessoramento ao DHPP."
+prediction = predict_fake_news(best_nb_clf, vectorizer, sample_news)
+
+if prediction == 0:
+    print("A notícia é classificada como fake.")
+else:
+    print("A notícia é classificada como real.")
