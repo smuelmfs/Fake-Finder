@@ -88,15 +88,16 @@ print("F1 Score:", f1_score(y_test, nb_predictions, average='weighted'))
 
 # Cross-validation
 scoring = {'accuracy': 'accuracy',
-           'precision': 'precision_weighted',
-           'recall': 'recall_weighted',
-           'f1_score': 'f1_weighted'}
+           'precision': 'precision',
+           'recall': 'recall',
+           'f1_score': 'f1'}
+
 cv_results = cross_validate(nb_model, X_train_vectorized, y_train, scoring=scoring, cv=5)
 print("Cross-validation results for Naive Bayes Model:")
 for metric_name, result in cv_results.items():
     print(f"{metric_name}: {result.mean()} (±{result.std()})")
 
-# Inicialização e treinamento de outros modelos (SVM, Random Forest, Decision Tree)
+'''# Inicialização e treinamento de outros modelos (SVM, Random Forest, Decision Tree)
 svm_clf = SVC()
 svm_clf.fit(X_train_vectorized, y_train)
 
@@ -110,12 +111,12 @@ dt_clf.fit(X_train_vectorized, y_train)
 print("Avaliação de outros modelos:")
 print("SVM Accuracy:", svm_clf.score(X_test_vectorized, y_test))
 print("Random Forest Accuracy:", rf_clf.score(X_test_vectorized, y_test))
-print("Decision Tree Accuracy:", dt_clf.score(X_test_vectorized, y_test))
+print("Decision Tree Accuracy:", dt_clf.score(X_test_vectorized, y_test))'''
 
 # Ajuste de hiperparâmetros para o Naive Bayes Multinomial
 parameters = {'alpha': [0.5, 1.0, 1.5]}
 nb_clf = MultinomialNB()
-grid_search = GridSearchCV(nb_clf, parameters)
+grid_search = GridSearchCV(nb_clf, parameters, cv=5, n_jobs=-1)
 grid_search.fit(X_train_vectorized, y_train)
 
 best_nb_clf = grid_search.best_estimator_
@@ -125,26 +126,32 @@ print("Best Naive Bayes Multinomial Accuracy:", best_nb_clf.score(X_test_vectori
 oversample = RandomOverSampler(random_state=42)
 X_train_balanced, y_train_balanced = oversample.fit_resample(X_train_vectorized, y_train)
 
-# Verificação das palavras mais importantes para o Naive Bayes Multinomial
-feature_names = vectorizer.get_feature_names()
-top_n = 10
-top_positive = sorted(zip(best_nb_clf.coef_[0], feature_names), reverse=True)[:top_n]
-top_negative = sorted(zip(best_nb_clf.coef_[0], feature_names))[:top_n]
+# Define top_n como um valor inteiro
+top_n = 20
 
+# Obter as palavras mais importantes com base nas contagens no vetorizador
+feature_names = vectorizer.get_feature_names_out()
+
+# Obter os índices para as palavras mais importantes positivas e negativas
+top_positive_indices = best_nb_clf.feature_log_prob_[1].argsort()[-top_n:][::-1]
+top_negative_indices = best_nb_clf.feature_log_prob_[0].argsort()[-top_n:][::-1]
+
+# Mostra as palavras mais importantes positivas e seus coeficientes
 print("Top Palavras Positivas:")
-print([word for coef, word in top_positive])
+print([(feature_names[i], best_nb_clf.feature_log_prob_[1][i]) for i in top_positive_indices])
 
+# Mostra as palavras mais importantes negativas e seus coeficientes
 print("Top Palavras Negativas:")
-print([word for coef, word in top_negative])
+print([(feature_names[i], best_nb_clf.feature_log_prob_[0][i]) for i in top_negative_indices])
+'''ATÉ AQUI O CÓDIGO FUNCIONA DEPOIS DE MOSTRAR O TOP 20 DE PALAVRAS ELE PARECE ENTRAR EM UM LOOP'''
 
-# Inicialização e treinamento do modelo SVM com kernel linear
+'''# Inicialização e treinamento do modelo SVM com kernel linear
 svm_linear = SVC(kernel='linear')
 svm_linear.fit(X_train_vectorized, y_train)
 
 # Avaliação do modelo
 svm_linear_accuracy = svm_linear.score(X_test_vectorized, y_test)
-print("Accuracy with Linear SVM:", svm_linear_accuracy)
-
+print("Accuracy with Linear SVM:", svm_linear_accuracy)'''
 
 # Função para pré-processamento de uma única notícia
 def preprocess_single_news(news):
@@ -152,28 +159,25 @@ def preprocess_single_news(news):
     processed_news = preprocess_text(news)
     return processed_news
 
+# Exemplo de uso da função para prever se uma notícia é falsa ou não
+def predict_fake_news(model, vectorizer, news_vectorized):
+    # Previsão usando o modelo treinado
+    prediction = model.predict(news_vectorized)
+    return prediction
 
-# Função para prever se uma notícia é fake ou não
-def predict_fake_news(model, vectorizer, news):
-    # Pré-processamento da notícia
-    processed_news = preprocess_single_news(news)
+# Solicita ao usuário inserir uma notícia
+user_input_news = input("Insira a notícia a ser classificada como fake ou real: ")
 
-    # Vetorização usando o mesmo vetorizador usado no treinamento
-    news_vectorized = vectorizer.transform([processed_news])
+# Pré-processa a notícia de entrada do usuário
+processed_user_input_news = preprocess_single_news(user_input_news)
 
-    '''# Previsão usando o modelo treinado
-    prediction = model.predict(news_vectorized)'''
+# Vetoriza a notícia pré-processada usando o mesmo vetorizador usado no treinamento
+user_input_news_vectorized = vectorizer.transform([processed_user_input_news])
 
-    # Solicita ao usuário inserir uma notícia
-    user_input_news = input("Insira a notícia a ser classificada como fake ou real: ")
+# Exemplo de uso da função para prever se uma notícia é falsa ou não
+prediction = predict_fake_news(nb_model, vectorizer, user_input_news_vectorized)
 
-    # Exemplo de uso da função para prever se uma notícia é fake ou não
-    prediction = predict_fake_news(model, nb_model, vectorizer, user_input_news, news_vectorized)
-
-    if prediction == 0:
-        print("A notícia é classificada como fake.")
-    else:
-        print("A notícia é classificada como real.")
-
-
-
+if prediction == 0:
+    print("\nA notícia é classificada como falsa.")
+else:
+    print("\nA notícia é classificada como real.")
