@@ -33,20 +33,22 @@ df = df.dropna().drop_duplicates()
 # Verificação após remoção de valores nulos e duplicados
 print("Número de linhas após remoção de nulos e duplicados:", df.shape[0])
 
-# Contagem dos rótulos
-label_count = df['label'].value_counts()
+# Verifica a presença da coluna 'label'
+if 'label' in df.columns:
+    # Contagem dos rótulos
+    label_count = df['label'].value_counts()
 
-# Visualização da distribuição dos rótulos
-plt.bar(label_count.index, label_count)
-plt.title('Distribuição de rótulos')
-plt.xlabel('Rótulo')
-plt.ylabel('Número de ocorrências')
-plt.xticks([0, 1], ['Fake', 'Real'])
-plt.show()
+    # Visualização da distribuição dos rótulos
+    plt.bar(label_count.index, label_count)
+    plt.title('Distribuição de rótulos')
+    plt.xlabel('Rótulo')
+    plt.ylabel('Número de ocorrências')
+    plt.xticks([0, 1], ['Fake', 'Real'])
+    plt.show()
 
-# Exibição percentual dos rótulos
-print("Percentual de rótulos Fake:", 100 * label_count[0] / len(df['label']))
-print("Percentual de rótulos Real:", 100 * label_count[1] / len(df['label']))
+    # Exibição percentual dos rótulos
+    print("Percentual de rótulos Fake:", 100 * label_count[0] / len(df['label']))
+    print("Percentual de rótulos Real:", 100 * label_count[1] / len(df['label']))
 
 # Concatenação dos campos 'title' e 'text' para criar uma nova coluna 'news'
 df['news'] = df['title'] + ' ' + df['text']
